@@ -25,14 +25,14 @@ def parse_info(text):
 
     info['성별'] = re.search(r'성별[:：]?\s*(남|여)', text).group(1) if re.search(r'성별[:：]?\s*(남|여)', text) else "미상"
     
-    dob_raw = re.search(r'생년월일[:：]?\s*([\d]{4}[.\-\s년]?[\d]{1,2}[.\-\s월]?[\d]{1,2}[일]?)', text)
+    dob_raw = re.search(r'생년월일[:：]?\s*([\d]{4}[./\-\s년]?[\d]{1,2}[./\-\s월]?[\d]{1,2}[일]?)', text)
     if dob_raw:
         dob = re.sub(r'[^\d]', '', dob_raw.group(1))
         info['생년월일'] = datetime.strptime(dob, "%Y%m%d").date()
         today = datetime.today().date()
         info['나이'] = today.year - info['생년월일'].year - ((today.month, today.day) < (info['생년월일'].month, info['생년월일'].day))
 
-    diagnosis_raw = re.search(r'진단일[:：]?\s*([\d]{4}[.\-\s년]?[\d]{1,2}[.\-\s월]?[\d]{1,2}[일]?)', text)
+    diagnosis_raw = re.search(r'진단일[:：]?\s*([\d]{4}[./\-\s년]?[\d]{1,2}[./\-\s월]?[\d]{1,2}[일]?)', text)
     if diagnosis_raw:
         diagnosis = re.sub(r'[^\d]', '', diagnosis_raw.group(1))
         info['진단일'] = datetime.strptime(diagnosis, "%Y%m%d").date()
