@@ -11,22 +11,22 @@ smwu 24 OSS final team project
 
 python              3.10.16
 
-accelerate          1.7.0
+accelerate          1.7.0  > 0.5.0
 
-datasets            3.6.0
+datasets            3.6.0  > 1.18.0
 
-huggingface-hub     0.32.0
+huggingface-hub     0.32.0  > 0.32.0
 
-kobert-transformers 0.6.0
+kobert-transformers 0.6.0  > 0.6.0
 
-matplotlib          3.10.3
+matplotlib          3.10.3  > 3.10.3
 
-numpy               2.2.6
+numpy               2.2.6  > 2.2.6
 
-tokenizers          0.21.1
+tokenizers          0.21.1  > 0.11.6
 
-torch               2.7.0
+torch               2.7.0  > 2.7.0
 
-transformers        4.52.3
+transformers        4.52.3  > 4.18.0
 
-sentencepiece       0.2.0
+sentencepiece       0.2.0  > 0.1.96
