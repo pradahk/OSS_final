@@ -33,6 +33,9 @@ def init_session_state():
     
     if 'completed_questions' not in st.session_state:
         st.session_state.completed_questions = set()  # 폐기된 질문들
+
+    if 'reusable_questions' not in st.session_state:
+        st.session_state.reusable_questions = set()  # 재사용 가능한 질문들
     
     if 'last_activity_date' not in st.session_state:
         st.session_state.last_activity_date = date.today()
@@ -42,6 +45,12 @@ def init_session_state():
     
     if 'current_memory_question' not in st.session_state:
         st.session_state.current_memory_question = None
+
+    if 'image_generated' not in st.session_state:
+        st.session_state.image_generated = False
+    
+    if 'awaiting_image_response' not in st.session_state:
+        st.session_state.awaiting_image_response = False
 
 # 텍스트 유사도 계산 함수
 def calculate_similarity(text1, text2):
@@ -59,13 +68,13 @@ def check_new_day():
 
 # 초기 회상 단계
 def initial_phase():
-    st.info("🔄 **초기 회상 단계**: 하루에 3개의 질문을 드립니다.")
+    st.info("🔄 **초기 회상 단계**: 하루에 2개의 질문을 드립니다.")
     
     # 새로운 날인지 확인
     check_new_day()
     
-    # 오늘 3개 질문을 모두 완료했는지 확인
-    if st.session_state.daily_question_count >= 3:
+    # 오늘 2개 질문을 모두 완료했는지 확인
+    if st.session_state.daily_question_count >= 2:
         st.success("✅ 오늘의 모든 질문을 완료하셨습니다! 내일 다시 만나요.")
         return
     
@@ -129,6 +138,74 @@ def memory_check_phase():
         st.success("🎉 모든 기억 점검을 완료하셨습니다!")
         return
     
+    # 이미지 응답을 기다리는 상태인 경우
+    if st.session_state.awaiting_image_response:
+        current_q_idx = st.session_state.current_memory_question
+        question = st.session_state.stored_answers[current_q_idx]["question"]
+        original_answer = st.session_state.stored_answers[current_q_idx]["answer"]
+        
+        st.subheader("🖼️ 생성된 이미지")
+        st.write(f"**{question}**")
+        st.image("https://via.placeholder.com/400x300.png?text=Memory+Image", 
+                caption="생성된 기억 이미지 (GPT-4o API 연동 예정)")
+        
+        st.write("이미지를 보시고 기억이 나시나요?")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ 기억해요", type="primary", key="image_remember"):
+                st.write("기억하고 계신 내용을 말씀해주세요:")
+                
+                current_memory = st.text_area("현재 기억하고 계신 내용:", key=f"image_memory_{current_q_idx}")
+                
+                if st.button("답변 제출", key="image_memory_submit"):
+                    if current_memory.strip():
+                        # 유사도 계산
+                        similarity = calculate_similarity(original_answer, current_memory.strip())
+                        
+                        st.write(f"**현재 답변**: {current_memory.strip()}")
+                        
+                        # 유사도가 70% 이상이면 질문 재사용 가능으로 설정
+                        if similarity >= 0.7:
+                            st.success("✅ 기억이 잘 보존되어 있습니다! 원본 답변을 확인해보세요.")
+                            st.write(f"**원본 답변**: {original_answer}")
+                            st.session_state.reusable_questions.add(current_q_idx)
+                            st.info("💡 이 질문은 나중에 다시 사용될 수 있습니다.")
+                        else:
+                            st.warning("⚠️ 기억에 차이가 있습니다. 원본 답변을 확인해보세요.")
+                            st.write(f"**원본 답변**: {original_answer}")
+                        
+                        st.session_state.completed_questions.add(current_q_idx)
+                        
+                        # 상태 리셋
+                        st.session_state.awaiting_image_response = False
+                        st.session_state.current_memory_question = None
+                        st.session_state.image_generated = False
+                        
+                        if st.button("다음 질문으로", key="next_after_image_remember"):
+                            st.rerun()
+                    else:
+                        st.warning("⚠️ 기억하고 계신 내용을 입력해주세요.")
+        
+        with col2:
+            if st.button("❌ 기억 안 나요", key="image_no_remember"):
+                st.write("💭 기억이 나지 않으시는군요. 원본 답변을 확인해보세요.")
+                st.write(f"**원본 답변**: {original_answer}")
+                
+                # 질문 완료 처리 (삭제)
+                st.session_state.completed_questions.add(current_q_idx)
+                st.info("이 질문은 완료되었습니다.")
+                
+                # 상태 리셋
+                st.session_state.awaiting_image_response = False
+                st.session_state.current_memory_question = None
+                st.session_state.image_generated = False
+                
+                if st.button("다음 질문으로", key="next_after_image_no_remember"):
+                    st.rerun()
+        
+        return
+    
     # 기억 응답을 기다리는 상태가 아닌 경우, 새로운 질문 제시
     if not st.session_state.awaiting_memory_response:
         # 첫 번째 사용 가능한 질문 선택
@@ -151,17 +228,21 @@ def memory_check_phase():
             if st.button("❌ 기억 안 나요"):
                 # 이미지 생성 단계 (현재는 플레이스홀더)
                 st.write("💡 **이미지 생성 중...**")
-                original_answer = st.session_state.stored_answers[current_q_idx]["answer"]
-                st.write(f"**과거 답변**: {original_answer}")
+                # original_answer = st.session_state.stored_answers[current_q_idx]["answer"]
+                # st.write(f"**과거 답변**: {original_answer}")
                 st.image("https://via.placeholder.com/400x300.png?text=Memory+Image", 
                         caption="생성된 기억 이미지 (GPT-4o API 연동 예정)")
                 
-                # 질문 완료 처리
-                st.session_state.completed_questions.add(current_q_idx)
-                st.success("🖼️ 이미지가 생성되었습니다. 이 질문은 완료되었습니다.")
+                # # 질문 완료 처리
+                # st.session_state.completed_questions.add(current_q_idx)
+                # st.success("🖼️ 이미지가 생성되었습니다. 이 질문은 완료되었습니다.")
                 
-                if st.button("다음 질문으로"):
-                    st.rerun()
+                # if st.button("다음 질문으로"):
+                #     st.rerun()
+
+                st.session_state.awaiting_image_response = True
+                st.session_state.image_generated = True
+                st.rerun()
     
     # 기억한다고 답변한 경우, 상세 답변 요청
     else:
@@ -182,19 +263,23 @@ def memory_check_phase():
                     # 유사도 계산
                     similarity = calculate_similarity(original_answer, current_memory.strip())
                     
-                    st.write(f"**원본 답변**: {original_answer}")
+                    # st.write(f"**원본 답변**: {original_answer}")
                     st.write(f"**현재 답변**: {current_memory.strip()}")
-                    st.write(f"**유사도**: {similarity:.2%}")
+                    # st.write(f"**유사도**: {similarity:.2%}")
                     
                     # 유사도가 70% 이상이면 질문 폐기
                     if similarity >= 0.7:
                         st.success("✅ 기억이 잘 보존되어 있습니다! 이 질문은 완료됩니다.")
+                        st.write(f"**원본 답변**: {original_answer}")
                         st.session_state.completed_questions.add(current_q_idx)
+                        st.info("💡 이 질문은 나중에 다시 사용될 수 있습니다.")
                     else:
                         st.warning("⚠️ 기억에 차이가 있습니다. 이미지를 생성합니다.")
                         st.image("https://via.placeholder.com/400x300.png?text=Memory+Enhancement+Image", 
                                 caption="기억 보강을 위한 생성 이미지")
-                        st.session_state.completed_questions.add(current_q_idx)
+                        st.write(f"**원본 답변**: {original_answer}")
+                    
+                    st.session_state.completed_questions.add(current_q_idx)
                     
                     # 상태 리셋
                     st.session_state.awaiting_memory_response = False
@@ -221,6 +306,7 @@ def main():
         st.write(f"**단계**: {st.session_state.mode}")
         st.write(f"**저장된 답변 수**: {len(st.session_state.stored_answers)}")
         st.write(f"**완료된 질문 수**: {len(st.session_state.completed_questions)}")
+        st.write(f"**재사용 가능 질문 수**: {len(st.session_state.reusable_questions)}")
         st.write(f"**오늘 답변한 질문**: {st.session_state.daily_question_count}")
         
         st.divider()
