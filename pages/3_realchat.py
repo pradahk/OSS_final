@@ -134,9 +134,7 @@ def memory_check_phase():
     available_questions = [idx for idx in st.session_state.stored_answers.keys() 
                           if idx not in st.session_state.completed_questions]
     
-    if not available_questions:
-        st.success("🎉 모든 기억 점검을 완료하셨습니다!")
-        return
+    
     
     # 이미지 응답을 기다리는 상태인 경우
     if st.session_state.awaiting_image_response:
@@ -243,6 +241,10 @@ def memory_check_phase():
                 st.session_state.awaiting_image_response = True
                 st.session_state.image_generated = True
                 st.rerun()
+
+    if not available_questions:
+        st.success("🎉 모든 기억 점검을 완료하셨습니다!")
+        return
     
     # 기억한다고 답변한 경우, 상세 답변 요청
     else:
