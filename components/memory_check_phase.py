@@ -19,8 +19,21 @@ class MemoryCheckPhase:
         """기억 점검 단계 메인 렌더링"""
         st.info(f"🧠 **기억 유무 점검 단계**: 하루에 새로운 질문 1개와 기억 점검 {MAX_DAILY_MEMORY_CHECKS}개를 진행합니다.")
         
-        # 오늘 활동 현황 확인
+        # 결과 메시지가 있으면 먼저 표시
+        if st.session_state.get('show_result', False):
+            self._show_result_message()
+            return
+        
+        # 진행 중인 기억 점검이 있는지 확인
+        has_pending = self.db_ops.has_pending_memory_check(self.user_id)
+        
+        # 오늘 활동 현황 확인 (완료된 것만)
         new_answers_today, memory_checks_today = self.db_ops.get_today_activity_count(self.user_id)
+        
+        # 진행 중인 기억 점검이 있으면 그것을 먼저 처리
+        if has_pending:
+            self._handle_pending_memory_check()
+            return
         
         # 오늘의 할당량 확인
         if new_answers_today >= 1 and memory_checks_today >= MAX_DAILY_MEMORY_CHECKS:
@@ -33,6 +46,68 @@ class MemoryCheckPhase:
         elif memory_checks_today < MAX_DAILY_MEMORY_CHECKS:
             self._handle_memory_check()
     
+    def _handle_pending_memory_check(self):
+        """진행 중인 기억 점검 처리"""
+        st.subheader("🧠 진행 중인 기억 점검")
+        st.info("현재 진행 중인 기억 점검을 완료해주세요.")
+        
+        # 진행 중인 기억 점검 정보 가져오기
+        pending_check = self._get_pending_memory_check()
+        if not pending_check:
+            st.error("진행 중인 기억 점검 정보를 찾을 수 없습니다.")
+            return
+        
+        check_id, question_id, original_answer_id = pending_check
+        
+        # 원본 답변과 질문 정보 가져오기
+        original_info = self._get_original_answer_info(question_id, original_answer_id)
+        if not original_info:
+            st.error("원본 답변 정보를 찾을 수 없습니다.")
+            return
+        
+        question_text, answer_text = original_info
+        
+        # 세션 상태 설정
+        st.session_state.current_memory_question = (question_id, answer_text, question_text)
+        st.session_state.current_check_id = check_id
+        st.session_state.awaiting_image_response = True
+        
+        # 이미지 응답 처리
+        self._handle_image_response()
+    
+    def _get_pending_memory_check(self):
+        """진행 중인 기억 점검 정보 가져오기"""
+        today_str = date.today().strftime('%Y-%m-%d')
+        
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT check_id, question_id, original_answer_id
+            FROM MEMORY_CHECKS 
+            WHERE user_id = ? AND check_date = ? 
+            AND result IN ('requires_image', 'pending')
+            ORDER BY created_at DESC LIMIT 1
+        """, (self.user_id, today_str))
+        result = cursor.fetchone()
+        conn.close()
+        
+        return result
+    
+    def _get_original_answer_info(self, question_id, original_answer_id):
+        """원본 답변 정보 가져오기"""
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT q.question_text, ua.answer_text
+            FROM QUESTIONS q
+            JOIN USER_ANSWERS ua ON q.question_id = ua.question_id
+            WHERE q.question_id = ? AND ua.answer_id = ?
+        """, (question_id, original_answer_id))
+        result = cursor.fetchone()
+        conn.close()
+        
+        return result
+    
     def _handle_new_question(self):
         """새로운 질문 처리"""
         # context를 추가하여 key 중복 방지
@@ -42,11 +117,6 @@ class MemoryCheckPhase:
     def _handle_memory_check(self):
         """기억 점검 처리"""
         st.subheader("🧠 오늘의 기억 점검")
-        
-        # 결과 메시지 표시
-        if st.session_state.get('show_result', False):
-            self._show_result_message()
-            return
         
         # 기억 점검 로직 실행
         if st.session_state.get('awaiting_image_response', False):
@@ -84,9 +154,15 @@ class MemoryCheckPhase:
         
         with col2:
             if st.button("❌ 기억 안 나요"):
-                st.session_state.image_generated = True
-                st.session_state.awaiting_image_response = True
-                st.rerun()
+                # check_id를 미리 생성
+                check_id = self._create_initial_memory_check(question_id)
+                if check_id:
+                    st.session_state.current_check_id = check_id
+                    st.session_state.image_generated = True
+                    st.session_state.awaiting_image_response = True
+                    st.rerun()
+                else:
+                    st.error("기억 확인 정보를 생성할 수 없습니다.")
     
     def _get_available_questions(self):
         """사용 가능한 질문들 가져오기"""
@@ -131,14 +207,6 @@ class MemoryCheckPhase:
         else:
             return None
     
-    # _handle_new_question 메서드 수정
-    def _handle_new_question(self):
-        """새로운 질문 처리"""
-        # context를 추가하여 key 중복 방지
-        from components.initial_phase import render_initial_phase
-        render_initial_phase(self.user_id, self.db_ops, context="memory_check")
-
-    # _handle_memory_response 메서드의 text_area 부분 수정
     def _handle_memory_response(self):
         """기억 응답 처리"""
         question_id, original_answer, question_text = st.session_state.current_memory_question
@@ -165,34 +233,7 @@ class MemoryCheckPhase:
             if st.button("취소", key=f"memory_cancel_{question_id}"):
                 self._reset_state()
                 st.rerun()
-
-    # _handle_image_memory_input 메서드의 text_area 부분 수정
-    def _handle_image_memory_input(self, question_id, original_answer, check_id):
-        """이미지를 보고 기억한다고 한 경우의 입력 처리"""
-        st.write("---")
-        st.write("😊 **좋습니다! 기억하고 계신 내용을 말씀해주세요:**")
-        st.write("💡 정확한 답변을 해주시면 이 질문을 나중에 다시 사용할 수 있습니다.")
-        
-        # 고유한 key 사용
-        current_memory = st.text_area(
-            "현재 기억하고 계신 내용:", 
-            key=f"image_memory_{question_id}_{check_id}"
-        )
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("답변 제출", type="primary", key=f"image_submit_{check_id}"):
-                if current_memory.strip():
-                    self._verify_image_memory(question_id, original_answer, 
-                                            current_memory.strip(), check_id)
-                else:
-                    st.warning("⚠️ 기억하고 계신 내용을 입력해주세요.")
-        
-        with col2:
-            if st.button("취소", key=f"image_cancel_{check_id}"):
-                st.session_state.awaiting_image_memory_input = False
-                st.rerun()
-
+    
     def _process_memory_response(self, question_id, original_answer, current_memory):
         """기억 응답 처리"""
         # 유사도 계산
@@ -277,15 +318,35 @@ class MemoryCheckPhase:
     
     def _handle_image_response(self):
         """이미지 응답 처리"""
+        # current_memory_question 확인
+        if not st.session_state.get('current_memory_question'):
+            st.error("❌ 질문 정보를 찾을 수 없습니다.")
+            self._reset_state()
+            st.rerun()
+            return
+        
         question_id, original_answer, question_text = st.session_state.current_memory_question
         
         st.subheader("🖼️ 기억 도움 이미지")
         st.write(f"**{question_text}**")
         
+        # check_id 확인 및 복구 시도
         check_id = st.session_state.get('current_check_id')
+        
         if not check_id:
-            st.error("❌ 기억 확인 정보를 찾을 수 없습니다.")
-            return
+            # check_id가 없으면 DB에서 찾거나 새로 생성
+            check_id = self._find_or_create_check_id(question_id)
+            
+            if check_id:
+                st.session_state.current_check_id = check_id
+            else:
+                st.error("❌ 기억 확인 정보를 찾을 수 없습니다.")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("다시 시작", type="primary"):
+                        self._reset_state()
+                        st.rerun()
+                return
         
         # 이미지 표시
         self._display_image(check_id, original_answer)
@@ -299,12 +360,12 @@ class MemoryCheckPhase:
         else:
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("✅ 이미지를 보니 기억해요", type="primary"):
+                if st.button("✅ 이미지를 보니 기억해요", type="primary", key=f"remember_yes_{check_id}"):
                     st.session_state.awaiting_image_memory_input = True
                     st.rerun()
             
             with col2:
-                if st.button("❌ 이미지를 봐도 기억 안 나요"):
+                if st.button("❌ 이미지를 봐도 기억 안 나요", key=f"remember_no_{check_id}"):
                     self._handle_complete_failure(question_id, original_answer, check_id)
     
     def _display_image(self, check_id, original_answer):
@@ -329,7 +390,6 @@ class MemoryCheckPhase:
                 
                 if keywords:
                     database.update_memory_check_keywords(check_id, keywords, 'auto_extracted')
-                    st.info(f"**추출된 키워드**: {', '.join(keywords)}")
                     
                     image_url = self.image_generator.generate_image(keywords)
                     
@@ -348,11 +408,15 @@ class MemoryCheckPhase:
         st.write("😊 **좋습니다! 기억하고 계신 내용을 말씀해주세요:**")
         st.write("💡 정확한 답변을 해주시면 이 질문을 나중에 다시 사용할 수 있습니다.")
         
-        current_memory = st.text_area("현재 기억하고 계신 내용:", key=f"image_memory_{question_id}")
+        # 고유한 key 사용
+        current_memory = st.text_area(
+            "현재 기억하고 계신 내용:", 
+            key=f"image_memory_{question_id}_{check_id}"
+        )
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("답변 제출", type="primary"):
+            if st.button("답변 제출", type="primary", key=f"image_submit_{check_id}"):
                 if current_memory.strip():
                     self._verify_image_memory(question_id, original_answer, 
                                             current_memory.strip(), check_id)
@@ -360,7 +424,8 @@ class MemoryCheckPhase:
                     st.warning("⚠️ 기억하고 계신 내용을 입력해주세요.")
         
         with col2:
-            if st.button("취소"):
+            if st.button("취소", key=f"image_cancel_{check_id}"):
+                # 취소 시 이전 상태로 돌아가기
                 st.session_state.awaiting_image_memory_input = False
                 st.rerun()
     
@@ -369,50 +434,55 @@ class MemoryCheckPhase:
         is_passed, similarity = self.memory_checker.verify_memory(original_answer, current_memory)
         
         if is_passed:
+            # 답변이 일치하는 경우 - 재사용 질문으로 등록
             result_msg = "✅ **기억 검증 성공**\n\n"
-            result_msg += f"**원본 답변**: {original_answer}\n\n"
             result_msg += f"**현재 답변**: {current_memory}\n\n"
-            result_msg += f"**유사도**: {similarity:.1%}\n\n"
-            result_msg += "💡 **이 질문은 재사용 가능한 질문으로 등록되었습니다.**"
+            result_msg += f"**원본 답변**: {original_answer}\n\n"
+            #result_msg += f"**유사도**: {similarity:.1%}\n\n"
+            result_msg += "🔄 **이 질문은 재사용 가능한 질문으로 등록되었습니다.**\n"
+            result_msg += "나중에 다시 기억을 점검할 때 사용될 수 있습니다."
             
             memory_status = 'remembered'
-            result = 'passed'
+            result = 'passed'  # 재사용 가능한 질문으로 표시
             result_type = 'success'
+            
         else:
+            # 답변이 일치하지 않는 경우 - 정답 표시 후 질문 폐기
             result_msg = "❌ **기억 검증 실패**\n\n"
-            result_msg += f"**원본 답변**: {original_answer}\n\n"
-            result_msg += f"**현재 답변**: {current_memory}\n\n"
-            result_msg += f"**유사도**: {similarity:.1%}\n\n"
-            result_msg += "📖 **정확한 답변을 확인해주세요.**"
+            result_msg += f"**입력하신 답변**: {current_memory}\n\n"
+            result_msg += f"**정답**: {original_answer}\n\n"
+            result_msg += "🗑️ **이 질문은 더 이상 사용되지 않습니다.**\n"
+            result_msg += "다른 기억들에 집중하며 계속 노력해보세요!"
             
             memory_status = 'forgotten'
-            result = 'failed_verification'
+            result = 'failed_verification'  # 질문 폐기 표시
             result_type = 'warning'
         
         # DB 업데이트
         self._update_memory_check(check_id, memory_status, current_memory, similarity, result)
         
+        # 상태 설정 후 결과 표시
+        self._reset_state()  # 먼저 상태 리셋
         st.session_state.result_message = result_msg
         st.session_state.result_type = result_type
         st.session_state.show_result = True
-        self._reset_state()
         st.rerun()
-    
+        
     def _handle_complete_failure(self, question_id, original_answer, check_id):
         """완전히 기억하지 못한 경우 처리"""
         result_msg = "💭 **최종 기억 확인 실패**\n\n"
-        result_msg += f"**원본 답변**: {original_answer}\n\n"
-        result_msg += "이미지를 봐도 기억이 나지 않으셨습니다.\n"
-        result_msg += "이것은 자연스러운 과정이며, 이 질문은 더 이상 사용되지 않습니다.\n\n"
+        result_msg += f"**정답**: {original_answer}\n\n"
+        result_msg += "🗑️ **이 질문은 더 이상 사용되지 않습니다.**\n\n"
         result_msg += "🌟 다른 기억들을 소중히 간직하며 계속 노력해보세요!"
         
         # DB 업데이트
         self._update_memory_check(check_id, 'forgotten', '', 0.0, 'complete_failure')
         
+        # 상태 설정 후 결과 표시
+        self._reset_state()  # 먼저 상태 리셋
         st.session_state.result_message = result_msg
         st.session_state.result_type = 'info'
         st.session_state.show_result = True
-        self._reset_state()
         st.rerun()
     
     def _update_memory_check(self, check_id, memory_status, current_memory_text, 
@@ -441,7 +511,8 @@ class MemoryCheckPhase:
         else:
             st.info(result_message)
         
-        if st.button("완료", type="primary"):
+        if st.button("완료", type="primary", key="result_complete"):
+            # 결과 상태 완전히 클리어
             st.session_state.show_result = False
             st.session_state.result_message = ""
             st.session_state.result_type = ""
@@ -455,3 +526,55 @@ class MemoryCheckPhase:
         st.session_state.current_memory_question = None
         st.session_state.image_generated = False
         st.session_state.current_check_id = None
+
+    def _create_initial_memory_check(self, question_id):
+        """초기 기억 확인 레코드 생성"""
+        # 원본 답변 ID 찾기
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT answer_id FROM USER_ANSWERS 
+            WHERE user_id = ? AND question_id = ? AND is_initial_answer = 1
+        """, (self.user_id, question_id))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            original_answer_id = result[0]
+            # 임시 레코드 생성
+            check_id = database.add_memory_check(
+                user_id=self.user_id,
+                question_id=question_id,
+                original_answer_id=original_answer_id,
+                memory_status='forgotten',
+                current_memory_text='',
+                similarity_score=0.0,
+                extracted_keywords_status='pending',
+                result='requires_image',
+                check_type='manual_check',
+                extracted_keywords='[]',
+                check_date=date.today().strftime('%Y-%m-%d')
+            )
+            return check_id
+        return None
+    
+    def _find_or_create_check_id(self, question_id):
+        """기존 check_id 찾기 또는 새로 생성"""
+        # 오늘 날짜의 해당 질문에 대한 기록 찾기
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT check_id FROM MEMORY_CHECKS 
+            WHERE user_id = ? AND question_id = ? 
+            AND check_date = ? AND result = 'requires_image'
+            ORDER BY created_at DESC LIMIT 1
+        """, (self.user_id, question_id, date.today().strftime('%Y-%m-%d')))
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            return result[0]
+        else:
+            # 없으면 새로 생성
+            return self._create_initial_memory_check(question_id)
