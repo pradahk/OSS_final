@@ -20,7 +20,8 @@ def load_questions_from_csv(csv_path: str = "questions.csv") -> List[str]:
         
         for encoding in encodings:
             try:
-                df = pd.read_csv(csv_full_path, encoding=encoding)
+                # header=None으로 설정하여 첫 번째 줄도 데이터로 인식
+                df = pd.read_csv(csv_full_path, encoding=encoding, header=None)
                 print(f"CSV 파일 로딩 성공 (인코딩: {encoding})")
                 break
             except UnicodeDecodeError:
@@ -30,15 +31,10 @@ def load_questions_from_csv(csv_path: str = "questions.csv") -> List[str]:
             print("모든 인코딩으로 시도했지만 CSV 파일을 읽을 수 없습니다.")
             return []
         
-        # 질문 컬럼 찾기
-        question_column = find_question_column(df)
-        if question_column is None:
-            return []
-        
-        # 질문 리스트 생성
+        # 첫 번째 컬럼에서 질문 추출
         questions = []
-        for idx, question_text in enumerate(df[question_column].dropna()):
-            question_text = str(question_text).strip()
+        for idx, row in df.iterrows():
+            question_text = str(row[0]).strip()  # 첫 번째 컬럼 사용
             if question_text and question_text.lower() not in ['nan', 'null', '']:
                 questions.append(question_text)
         
@@ -50,7 +46,7 @@ def load_questions_from_csv(csv_path: str = "questions.csv") -> List[str]:
         return []
 
 def find_question_column(df: pd.DataFrame) -> Optional[str]:
-    """데이터프레임에서 질문 컬럼 찾기"""
+    """데이터프레임에서 질문 컬럼 찾기 (header=None일 때는 사용하지 않음)"""
     possible_columns = [
         'question', 'question_text', '질문', 'questions',
         'Question', 'QUESTION', 'Question_Text', 'QUESTION_TEXT',
