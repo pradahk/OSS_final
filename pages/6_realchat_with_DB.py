@@ -3,24 +3,50 @@ from datetime import date, timedelta, datetime
 import json
 from difflib import SequenceMatcher
 import database  # database.py import
+import pandas as pd
+import os
 
 st.header("💬 기억 회상 및 점검 챗")
 
-# 하드코딩된 질문 리스트
-QUESTIONS = [
-    "젊었을 때 자주 가셨던 장소가 기억나시나요?",
-    "자주 입던 옷이나 색깔이 떠오르시나요?",
-    "주말이나 명절에 하던 가족 활동이 기억나시나요?",
-    "늘 다니시던 산책길이 떠오르시나요?",
-    "가족과의 추억 중 가장 소중한 순간은 언제였나요?",
-    "자주 사용하시던 물건이 기억나시나요?",
-    "명절에 입던 옷이나 하시던 음식이 떠오르시나요?",
-    "젊은 시절 친구들과의 만남 장소가 떠오르시나요?"
-]
+# CSV에서 질문 불러오기
+def load_questions_from_csv(csv_path="questions.csv"):
+    """CSV 파일에서 질문들을 읽어와서 리스트로 반환"""
+    try:
+        if not os.path.exists(csv_path):
+            # CSV 파일이 없으면 빈 리스트 반환
+            return []
+        
+        df = pd.read_csv(csv_path, encoding='utf-8')
+        
+        # 질문 컬럼 찾기
+        question_column = None
+        possible_columns = ['question', 'question_text', '질문', 'questions']
+        
+        for col in possible_columns:
+            if col in df.columns:
+                question_column = col
+                break
+        
+        if question_column is None:
+            return []
+        
+        # 질문 리스트 생성
+        questions = []
+        for question_text in df[question_column].dropna():
+            question_text = str(question_text).strip()
+            if question_text:
+                questions.append(question_text)
+        
+        return questions
+        
+    except Exception:
+        return []
+
+QUESTIONS = load_questions_from_csv("questions.csv")
 
 # DB 초기화 및 질문 데이터 삽입
 def initialize_db():
-    """DB 테이블 생성 및 초기 질문 데이터 삽입"""
+    """DB 테이블 생성 및 CSV에서 질문 데이터 로드"""
     database.create_tables()
     
     # 이미 질문이 있는지 확인
@@ -30,11 +56,11 @@ def initialize_db():
     count = cursor.fetchone()[0]
     
     if count == 0:
-        # 질문이 없으면 초기 질문들 삽입
+        # 질문이 없으면 CSV에서 로드한 질문들 삽입
         for question_text in QUESTIONS:
-            database.add_question(question_text, 'initial_memory')
-        st.success(f"{len(QUESTIONS)}개의 초기 질문이 DB에 추가되었습니다.")
-    
+            database.add_question(question_text, 'csv_import')
+        st.success(f"{len(QUESTIONS)}개의 질문이 CSV에서 DB에 추가되었습니다.")
+
     conn.close()
 
 # 사용자 생성 또는 가져오기
@@ -84,6 +110,14 @@ def get_questions_from_db():
     cursor.execute("SELECT question_id, question_text FROM QUESTIONS ORDER BY question_id")
     questions = cursor.fetchall()
     conn.close()
+    return questions
+
+# 메인 애플리케이션에서 사용할 질문 가져오기 함수
+def get_current_questions():
+    """현재 사용할 질문들을 DB에서 가져오기"""
+    questions_data = get_questions_from_db()
+    # (question_id, question_text) 튜플에서 question_text만 추출
+    questions = [q[1] for q in questions_data]
     return questions
 
 # DB에서 사용자 답변 가져오기

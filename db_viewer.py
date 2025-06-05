@@ -1,5 +1,6 @@
 import sqlite3
 import pandas as pd
+import os
 
 # 연결
 conn = sqlite3.connect('memory_app.db')
