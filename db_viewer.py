@@ -9,9 +9,6 @@ conn = sqlite3.connect('memory_app.db')
 print("=== USERS ===")
 print(pd.read_sql_query("SELECT * FROM USERS", conn))
 
-print("\n=== QUESTIONS ===")
-print(pd.read_sql_query("SELECT * FROM QUESTIONS", conn))
-
 print("\n=== USER_ANSWERS ===") 
 print(pd.read_sql_query("SELECT * FROM USER_ANSWERS", conn))
 

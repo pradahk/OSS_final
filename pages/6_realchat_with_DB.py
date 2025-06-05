@@ -8,41 +8,89 @@ import os
 
 st.header("💬 기억 회상 및 점검 챗")
 
-# CSV에서 질문 불러오기
+# CSV에서 질문 불러오기 (절대 경로 사용)
 def load_questions_from_csv(csv_path="questions.csv"):
     """CSV 파일에서 질문들을 읽어와서 리스트로 반환"""
     try:
-        if not os.path.exists(csv_path):
-            # CSV 파일이 없으면 빈 리스트 반환
+        # 현재 파일의 디렉토리를 기준으로 절대 경로 생성
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)  # pages의 상위 디렉토리 (UI)
+        csv_full_path = os.path.join(parent_dir, csv_path)
+        
+        print(f"현재 파일 위치: {current_dir}")
+        print(f"상위 디렉토리: {parent_dir}")
+        print(f"CSV 파일 전체 경로: {csv_full_path}")
+        
+        if not os.path.exists(csv_full_path):
+            print(f"CSV 파일을 찾을 수 없습니다: {csv_full_path}")
+            print(f"상위 디렉토리 내 파일들: {os.listdir(parent_dir)}")
             return []
         
-        df = pd.read_csv(csv_path, encoding='utf-8')
+        print(f"CSV 파일 발견: {csv_full_path}")
+        
+        # 여러 인코딩으로 시도
+        encodings = ['utf-8', 'cp949', 'euc-kr', 'utf-8-sig']
+        df = None
+        
+        for encoding in encodings:
+            try:
+                df = pd.read_csv(csv_full_path, encoding=encoding)
+                print(f"CSV 파일 로딩 성공 (인코딩: {encoding})")
+                break
+            except UnicodeDecodeError:
+                continue
+            except Exception as e:
+                print(f"인코딩 {encoding}으로 시도 중 오류: {e}")
+                continue
+        
+        if df is None:
+            print("모든 인코딩으로 시도했지만 CSV 파일을 읽을 수 없습니다.")
+            return []
+        
+        print(f"CSV 파일 컬럼: {list(df.columns)}")
+        print(f"CSV 파일 행 수: {len(df)}")
         
         # 질문 컬럼 찾기
         question_column = None
-        possible_columns = ['question', 'question_text', '질문', 'questions']
+        possible_columns = [
+            'question', 'question_text', '질문', 'questions',
+            'Question', 'QUESTION', 'Question_Text', 'QUESTION_TEXT',
+            '문제', '문항', 'item', 'Item'
+        ]
         
         for col in possible_columns:
             if col in df.columns:
                 question_column = col
+                print(f"질문 컬럼 발견: {question_column}")
                 break
         
         if question_column is None:
-            return []
+            print(f"질문 컬럼을 찾을 수 없습니다. 사용 가능한 컬럼: {list(df.columns)}")
+            # 첫 번째 컬럼을 질문 컬럼으로 사용
+            if len(df.columns) > 0:
+                question_column = df.columns[0]
+                print(f"첫 번째 컬럼을 질문 컬럼으로 사용: {question_column}")
+            else:
+                return []
         
         # 질문 리스트 생성
         questions = []
-        for question_text in df[question_column].dropna():
+        for idx, question_text in enumerate(df[question_column].dropna()):
             question_text = str(question_text).strip()
-            if question_text:
+            if question_text and question_text.lower() not in ['nan', 'null', '']:
                 questions.append(question_text)
+                print(f"질문 {idx+1}: {question_text[:50]}...")
         
+        print(f"총 {len(questions)}개의 질문을 로드했습니다.")
         return questions
         
-    except Exception:
+    except Exception as e:
+        print(f"CSV 로딩 중 오류 발생: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
-QUESTIONS = load_questions_from_csv("questions.csv")
+QUESTIONS = load_questions_from_csv()
 
 # DB 초기화 및 질문 데이터 삽입
 def initialize_db():
@@ -800,6 +848,16 @@ def main():
                 st.write(f"- {result}: {count}개")
             
             conn.close()
+
+        # 앱에 이 코드 추가
+        st.write("### DB 연결 상태 확인")
+        st.write(f"CSV에서 로드된 질문 수: {len(QUESTIONS)}")
+        st.write(f"DB에 저장된 질문 수: {len(get_current_questions())}")
+
+        # CSV 질문 표시
+        st.write("**CSV에서 읽은 질문들:**")
+        for i, q in enumerate(QUESTIONS, 1):
+            st.write(f"{i}. {q}")
 
 if __name__ == "__main__":
     main()
