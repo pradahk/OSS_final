@@ -7,7 +7,7 @@ MAX_KEYWORDS_PER_ANSWER = 3
 
 # OpenAI 설정
 OPENAI_MODEL = "dall-e-3"
-IMAGE_SIZE = "1024x1024"
+IMAGE_SIZE = "360x360"
 IMAGE_QUALITY = "standard"
 
 # 질문 타입
