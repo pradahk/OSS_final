@@ -52,7 +52,7 @@ class DBOperations:
     
     @staticmethod
     def get_today_activity_count(user_id: int) -> Tuple[int, int]:
-        """오늘의 활동 현황 확인"""
+        """오늘의 활동 현황 확인 - 완료된 활동만 카운트"""
         today_str = date.today().strftime('%Y-%m-%d')
         
         conn = database.get_db_connection()
@@ -65,10 +65,12 @@ class DBOperations:
         """, (user_id, today_str))
         new_answers_today = cursor.fetchone()[0]
         
-        # 오늘 수행한 기억 점검 수
+        # 오늘 완료한 기억 점검 수 (진행 중인 것 제외)
+        # 'requires_image'는 아직 진행 중인 상태이므로 제외
         cursor.execute("""
             SELECT COUNT(*) FROM MEMORY_CHECKS 
-            WHERE user_id = ? AND check_date = ?
+            WHERE user_id = ? AND check_date = ? 
+            AND result NOT IN ('requires_image', 'pending')
         """, (user_id, today_str))
         memory_checks_today = cursor.fetchone()[0]
         
@@ -100,3 +102,20 @@ class DBOperations:
         reusable = cursor.fetchall()
         conn.close()
         return set(row[0] for row in reusable)
+    
+    @staticmethod
+    def has_pending_memory_check(user_id: int) -> bool:
+        """진행 중인 기억 점검이 있는지 확인"""
+        today_str = date.today().strftime('%Y-%m-%d')
+        
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT COUNT(*) FROM MEMORY_CHECKS 
+            WHERE user_id = ? AND check_date = ? 
+            AND result IN ('requires_image', 'pending')
+        """, (user_id, today_str))
+        count = cursor.fetchone()[0]
+        conn.close()
+        
+        return count > 0
