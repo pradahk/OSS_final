@@ -1,5 +1,5 @@
 
-생성 일시 : 2025.05.24 SelfLabelling Branch 생성
+생성 일시 : 2025.06.01 SelfLabelling Branch 생성
 
 목적 : 예시 답변 362개의 문장에 대해 중요한 키워드에 B-I-O 라벨링을 해놓은 .csv파일을 업로드 하기 위해 생성
 
