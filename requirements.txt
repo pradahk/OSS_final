@@ -1,0 +1,25 @@
+# 치매 증상 지연 서비스 - 필요한 Python 패키지들
+
+# 웹 애플리케이션 프레임워크
+streamlit>=1.28.0
+
+# 데이터 처리 및 분석
+pandas>=2.0.0
+
+# PDF 파일 처리
+PyMuPDF>=1.23.0
+
+# OpenAI API (이미지 생성용)
+openai>=1.0.0
+
+# 기타 표준 라이브러리 (일반적으로 Python에 포함되어 있음)
+# sqlite3 - Python 표준 라이브러리
+# datetime - Python 표준 라이브러리  
+# json - Python 표준 라이브러리
+# re - Python 표준 라이브러리
+# os - Python 표준 라이브러리
+# sys - Python 표준 라이브러리
+# pathlib - Python 표준 라이브러리
+# difflib - Python 표준 라이브러리
+# random - Python 표준 라이브러리
+# typing - Python 표준 라이브러리
