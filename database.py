@@ -286,6 +286,139 @@ def get_user_progress(user_id):
 # 기타 필요한 조회 함수들을 추가할 수 있습니다.
 # 예: 특정 유형의 질문 목록 가져오기, 특정 사용자의 기억 확인 기록 가져오기 등
 
+# database.py에 추가할 함수들
+
+def update_memory_check_keywords(check_id, extracted_keywords, keywords_status='satisfied'):
+    """기억 확인 레코드의 키워드 정보 업데이트"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # extracted_keywords가 리스트인 경우 JSON 문자열로 변환
+    if isinstance(extracted_keywords, list):
+        extracted_keywords = json.dumps(extracted_keywords)
+    
+    cursor.execute("""
+        UPDATE MEMORY_CHECKS 
+        SET extracted_keywords = ?, extracted_keywords_status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE check_id = ?
+    """, (extracted_keywords, keywords_status, check_id))
+    
+    conn.commit()
+    conn.close()
+    print(f"기억 확인 {check_id}의 키워드 정보가 업데이트되었습니다.")
+
+def get_memory_check_keywords(check_id):
+    """특정 기억 확인의 키워드 가져오기"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT extracted_keywords, extracted_keywords_status 
+        FROM MEMORY_CHECKS 
+        WHERE check_id = ?
+    """, (check_id,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    if result:
+        keywords_json, status = result
+        try:
+            keywords = json.loads(keywords_json) if keywords_json else []
+            return keywords, status
+        except json.JSONDecodeError:
+            return [], 'error'
+    return [], 'not_found'
+
+def get_memory_check_by_details(user_id, question_id, check_date):
+    """특정 조건으로 기억 확인 레코드 찾기"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT check_id, extracted_keywords, extracted_keywords_status, result
+        FROM MEMORY_CHECKS 
+        WHERE user_id = ? AND question_id = ? AND check_date = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, (user_id, question_id, check_date))
+    result = cursor.fetchone()
+    conn.close()
+    return result
+
+# database.py에 추가할 함수들
+
+def update_memory_check_keywords(check_id, extracted_keywords, keywords_status='satisfied'):
+    """기억 확인 레코드의 키워드 정보 업데이트"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # extracted_keywords가 리스트인 경우 JSON 문자열로 변환
+    if isinstance(extracted_keywords, list):
+        extracted_keywords = json.dumps(extracted_keywords)
+    
+    cursor.execute("""
+        UPDATE MEMORY_CHECKS 
+        SET extracted_keywords = ?, extracted_keywords_status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE check_id = ?
+    """, (extracted_keywords, keywords_status, check_id))
+    
+    conn.commit()
+    conn.close()
+    print(f"기억 확인 {check_id}의 키워드 정보가 업데이트되었습니다.")
+
+def get_memory_check_keywords(check_id):
+    """특정 기억 확인의 키워드 가져오기"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT extracted_keywords, extracted_keywords_status 
+        FROM MEMORY_CHECKS 
+        WHERE check_id = ?
+    """, (check_id,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    if result:
+        keywords_json, status = result
+        try:
+            keywords = json.loads(keywords_json) if keywords_json else []
+            return keywords, status
+        except json.JSONDecodeError:
+            return [], 'error'
+    return [], 'not_found'
+
+def get_memory_check_by_details(user_id, question_id, check_date):
+    """특정 조건으로 기억 확인 레코드 찾기"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT check_id, extracted_keywords, extracted_keywords_status, result
+        FROM MEMORY_CHECKS 
+        WHERE user_id = ? AND question_id = ? AND check_date = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, (user_id, question_id, check_date))
+    result = cursor.fetchone()
+    conn.close()
+    return result
+
+def update_memory_check_keywords(check_id, extracted_keywords, keywords_status='satisfied'):
+    """기억 확인 레코드의 키워드 정보 업데이트"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # extracted_keywords가 리스트인 경우 JSON 문자열로 변환
+    if isinstance(extracted_keywords, list):
+        extracted_keywords = json.dumps(extracted_keywords, ensure_ascii=False)
+    
+    cursor.execute("""
+        UPDATE MEMORY_CHECKS 
+        SET extracted_keywords = ?, extracted_keywords_status = ?
+        WHERE check_id = ?
+    """, (extracted_keywords, keywords_status, check_id))
+    
+    conn.commit()
+    conn.close()
+    print(f"기억 확인 {check_id}의 키워드 정보가 업데이트되었습니다.")
+
 if __name__ == "__main__":
     # 이 파일을 직접 실행하면 데이터베이스를 생성하고 샘플 데이터를 넣어봅니다.
     create_tables()
