@@ -1,0 +1,25 @@
+{
+  "model_type": "klue_keyword_extractor",
+  "base_model": "klue/bert-base",
+  "num_labels": 3,
+  "label2id": {
+    "O": 0,
+    "B-KEY": 1,
+    "I-KEY": 2
+  },
+  "id2label": {
+    "0": "O",
+    "1": "B-KEY",
+    "2": "I-KEY"
+  },
+  "task": "keyword_extraction",
+  "domain": "dementia_patient_answers",
+  "labeling_scheme": "BIO",
+  "classes": [
+    "O",
+    "B-KEY",
+    "I-KEY"
+  ],
+  "training_timestamp": "20250617_141923",
+  "created_at": "2025-06-17T14:20:34.169100"
+}
