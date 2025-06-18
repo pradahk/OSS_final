@@ -211,7 +211,6 @@ def load_labeled_data():
             "labeled": True
         }
     ]
-    '''
     
     # 데이터 확장 (학습에 충분한 양으로)
     expanded_data = []
@@ -223,6 +222,7 @@ def load_labeled_data():
     
     print(f"✅ 예시 데이터 생성 완료: {len(expanded_data)}개 샘플")
     return expanded_data
+    '''
 
 class KeywordDataset(Dataset):
     """키워드 추출용 데이터셋"""
