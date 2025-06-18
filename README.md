@@ -35,3 +35,69 @@ transformers        4.52.3  > 4.18.0
 sentencepiece       0.2.0  > 0.1.96
 
 05.24 / 23:02 / 강다온 / [README] / 모듈 버전 변경사항 저장
+
+---
+---
+
+model 학습을 위한 모듈
+
+-CPU 버젼
+
+torch==2.0.1+cpu
+
+torchvision==0.15.2+cpu
+
+-GPU 버전 PyTorch (CUDA 11.8)
+torch==2.0.1+cu118
+
+torchvision==0.15.2+cu118
+
+torchaudio==2.0.2+cu118
+
+---
+
+cpu, gpu 상관 없이 공통
+
+transformers==4.30.2
+
+scikit-learn==1.6.1
+
+huggingface-hub==0.33.0
+
+pandas==1.5.3
+
+numpy==1.24.3
+
+scipy==1.13.1
+
+matplotlib==3.9.2
+
+seaborn==0.13.2
+
+streamlit
+
+requests==2.28.1
+
+tokenizers==0.13.3
+
+safetensors==0.5.3
+
+tqdm==4.67.1
+
+pyyaml==6.0.2
+
+regex==2024.11.6
+
+filelock==3.13.1
+
+fsspec==2025.5.1
+
+sympy==1.13.3
+
+mpmath==1.3.0
+
+networkx==3.2.1
+
+jinja2==3.1.4
+
+markupsafe==2.1.5
