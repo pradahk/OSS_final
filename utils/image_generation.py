@@ -57,7 +57,7 @@ class ImageGenerator:
             )
             
             image_url = response.data[0].url
-            st.info(f"🎨 생성된 이미지 프롬프트: {prompt}")
+            print(f"🎨 생성된 이미지 프롬프트: {prompt}")
             return image_url
             
         except openai.RateLimitError:
