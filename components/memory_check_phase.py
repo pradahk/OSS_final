@@ -185,14 +185,14 @@ class MemoryCheckPhase:
             )
             
             st.success("✅ 기억 검증 성공!")
-            st.info(f"매칭된 키워드: {match_count}개 (통과 기준: {self.memory_checker.keyword_threshold}개)")
+            #st.info(f"매칭된 키워드: {match_count}개 (통과 기준: {self.memory_checker.keyword_threshold}개)")
             st.success("🔄 이 질문은 나중에 다시 사용될 수 있습니다.")
             
             # 기억 점검 절차를 완전히 종료합니다.
             self._complete_memory_check()
         else:
             # 실패 - 힌트 제공
-            st.warning(f"⚠️ 키워드 매칭 부족: {match_count}개 (통과 기준: {self.memory_checker.keyword_threshold}개)")
+            #st.warning(f"⚠️ 키워드 매칭 부족: {match_count}개 (통과 기준: {self.memory_checker.keyword_threshold}개)")
             st.info("💡 기억을 도울 이미지를 보여드릴게요.")
             
             # 다음 단계(힌트)로 넘어가기 위해 세션 상태를 업데이트합니다.
@@ -282,13 +282,13 @@ class MemoryCheckPhase:
             )
             
             st.success("✅ 기억 검증 성공!")
-            st.info(f"매칭된 키워드: {match_count}개 (통과 기준: {self.memory_checker.keyword_threshold}개)")
+            #st.info(f"매칭된 키워드: {match_count}개 (통과 기준: {self.memory_checker.keyword_threshold}개)")
             st.success("  이 질문은 나중에 다시 사용될 수 있습니다.")
             
             self._complete_memory_check()
         else:
             # 실패 - 원본 답변 표시하고 질문 폐기
-            st.warning(f"⚠️ 기억 검증 실패: 키워드 매칭 부족 ({match_count}개)")
+            #st.warning(f"⚠️ 기억 검증 실패: 키워드 매칭 부족 ({match_count}개)")
             
             # 원본 답변 표시 단계로 이동
             check_info['step'] = 'show_original'
