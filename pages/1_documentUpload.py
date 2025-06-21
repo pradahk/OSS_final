@@ -7,7 +7,7 @@ st.header("📄 1단계: 진단서 업로드")
 
 uploaded_file = st.file_uploader("PDF 진단서를 업로드하세요", type=["pdf"])
 
-if 'user_info' not in st.session_state:
+if 'user_info' not in st.session_state or st.session_state.user_info is None:
     st.session_state.user_info = {}
 
 def extract_text_from_pdf(pdf_file):
@@ -45,15 +45,20 @@ def parse_info(text):
 
 if uploaded_file:
     with st.spinner("진단서 분석 중..."):
-        raw_text = extract_text_from_pdf(uploaded_file)
-        parsed_info = parse_info(raw_text)
-
-        # 오류 수정: None 체크 추가
-        if st.session_state.user_info is None:
+        try:
+            raw_text = extract_text_from_pdf(uploaded_file)
+            parsed_info = parse_info(raw_text)
+            
+            # 안전한 업데이트 방식
+            if st.session_state.user_info is None:
+                st.session_state.user_info = {}
+            
+            st.session_state.user_info.update(parsed_info)
+            st.success("사용자 정보가 추출되었습니다.")
+            
+        except Exception as e:
+            st.error(f"진단서 처리 중 오류가 발생했습니다: {e}")
             st.session_state.user_info = {}
-
-        st.session_state.user_info.update(parsed_info)
-        st.success("사용자 정보가 추출되었습니다.")
 
 if st.session_state.user_info:
     st.subheader("👤 사용자 정보")
