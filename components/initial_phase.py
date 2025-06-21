@@ -74,14 +74,13 @@ def render_initial_phase(user_id: int, context: str = "main"):
         return
     
     # 단계별 다른 메시지 표시
-    if context != "maintenance":
-        if phase_info['is_initial']:
-            remaining_days = INITIAL_PHASE_DAYS - phase_info['days_since_diagnosis']
-            st.info(f"🔄 **{phase_info['phase_name']}** (진단일로부터 {phase_info['days_since_diagnosis']+1}일차)\n\n"
-                    f"매일 {phase_info['max_daily_questions']}개의 새로운 기억 질문을 드립니다. ({remaining_days}일 남음)")
-        else:
-            st.info(f"🧠 **{phase_info['phase_name']}** (진단일로부터 {phase_info['days_since_diagnosis']+1}일차)\n\n"
-                    f"매일 {phase_info['max_daily_questions']}개의 새로운 질문과 기억 점검을 진행합니다.")
+    if phase_info['is_initial']:
+        remaining_days = INITIAL_PHASE_DAYS - phase_info['days_since_diagnosis']
+        st.info(f"🔄 **{phase_info['phase_name']}** (진단일로부터 {phase_info['days_since_diagnosis']+1}일차)\n\n"
+                f"매일 {phase_info['max_daily_questions']}개의 새로운 기억 질문을 드립니다. ({remaining_days}일 남음)")
+    else:
+        st.info(f"🧠 **{phase_info['phase_name']}** (진단일로부터 {phase_info['days_since_diagnosis']+1}일차)\n\n"
+                f"매일 {phase_info['max_daily_questions']}개의 새로운 질문과 기억 점검을 진행합니다.")
 
     # --- 오늘 답변한 질문 수 확인 ---
     conn = database.get_db_connection()
@@ -94,32 +93,16 @@ def render_initial_phase(user_id: int, context: str = "main"):
     new_answers_today = cursor.fetchone()[0]
     conn.close()
 
-    # 할당량 체크
-    # if new_answers_today >= phase_info['max_daily_questions']:
-    #     if phase_info['is_initial']:
-    #         st.success("✅ 오늘의 모든 질문을 완료하셨습니다! 내일 다시 만나요.")
-    #     else:
-    #         st.success("✅ 오늘의 새로운 질문을 완료하셨습니다!")
-    #     st.balloons()
-    #     return
-
-    # 할당량 체크 (초기 단계에서만 적용)
-    # if phase_info['is_initial'] and new_answers_today >= phase_info['max_daily_questions']:
-    #     st.success("✅ 오늘의 모든 질문을 완료하셨습니다! 내일 다시 만나요.")
-    #     st.balloons()
-    #     return
-    # elif not phase_info['is_initial'] and context == "maintenance" and new_answers_today >= phase_info['max_daily_questions']:
-    #     st.success("✅ 오늘의 새로운 질문을 완료하셨습니다!")
-    #     st.balloons()
-    #     return
-
-    if context == "maintenance" and new_answers_today >= phase_info['max_daily_questions']:
+    max_daily_questions = phase_info['max_daily_questions']
+    
+    if new_answers_today >= max_daily_questions:
         if phase_info['is_initial']:
             st.success("✅ 오늘의 모든 질문을 완료하셨습니다! 내일 다시 만나요.")
         else:
             st.success("✅ 오늘의 새로운 질문을 완료하셨습니다!")
         st.balloons()
         return
+
 
     # --- 답변하지 않은 질문 가져오기 ---
     conn = database.get_db_connection()
@@ -153,7 +136,7 @@ def render_initial_phase(user_id: int, context: str = "main"):
     # --- 다음 질문 표시 및 답변 입력 ---
     question_id, question_text = unanswered_questions[0]
     
-    remaining_questions = phase_info['max_daily_questions'] - new_answers_today
+    remaining_questions = max_daily_questions - new_answers_today
     st.subheader(f"💭 기억 떠올리기 (남은 질문: {remaining_questions}개)")
     st.markdown(f"#### Q. {question_text}")
     
@@ -161,7 +144,7 @@ def render_initial_phase(user_id: int, context: str = "main"):
         "이 질문에 대한 당신의 기억을 자유롭게 적어주세요.",
         key=f"{context}_initial_answer_{question_id}",
         height=150,
-        placeholder="어떤 기억이든 소중합니다. 편안하게 적어주세요..."
+        placeholder=""
     )
     
     col1, col2 = st.columns([3, 1])
@@ -170,7 +153,7 @@ def render_initial_phase(user_id: int, context: str = "main"):
             if answer.strip():
                 _save_answer_with_keywords(user_id, question_id, answer.strip(), today_str, phase_info)
             else:
-                st.warning("⚠️ 답변을 입력해주세요. 어떤 기억이든 소중합니다.")
+                st.warning("⚠️ 답변을 입력해주세요.")
     
     with col2:
         if st.button("건너뛰기", key=f"{context}_skip_{question_id}"):
@@ -184,8 +167,6 @@ def _save_answer_with_keywords(user_id: int, question_id: int, answer_text: str,
             extractor = get_keyword_extractor()
             if extractor:
                 extracted_keywords = extractor.extract_keywords(answer_text)
-                if extracted_keywords:
-                    st.info(f"🔍 추출된 키워드: {', '.join(extracted_keywords)}")
             else:
                 st.warning("⚠️ 키워드 추출기를 사용할 수 없어 답변만 저장됩니다.")
                 extracted_keywords = []
@@ -202,6 +183,7 @@ def _save_answer_with_keywords(user_id: int, question_id: int, answer_text: str,
             is_initial_answer=True,
             extracted_keywords=extracted_keywords
         )
+        print(extracted_keywords)
         
         # 3. 사용자 진행 상황 업데이트
         conn = database.get_db_connection()
