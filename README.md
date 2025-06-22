@@ -17,7 +17,9 @@ Implementation Method: Since personal information must be used, users must authe
 
    `pip install -r requirements.txt`
 
-3. Run `improved_klue_training_keywordLimit.py` with anaconda virtual environement. So that make the model for keyword 
+3. Run `improved_klue_training_keywordLimit.py` with anaconda virtual environement. So that make the model for keyword
+
+   ![모델 학습 결과](https://github.com/pradahk/OSS_final/blob/main/model_final_result.png)
 
    ```bash
    conda activate your_environment
