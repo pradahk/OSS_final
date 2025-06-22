@@ -26,7 +26,7 @@ Implementation Method: Since personal information must be used, users must authe
    cd your_directory
    python extracting.improved_klue_training_keywordLimit.py
 
-5. Run `main.py` in `OSS_final\main\UI` for streamlit UI.
+4. Run `main.py` in `OSS_final\main\UI` for streamlit UI.
 
    `streamlit run main.py`
    
@@ -36,19 +36,13 @@ Implementation Method: Since personal information must be used, users must authe
 
 1. When you open streamlit UI, you can meet first page of UI
 
-  (그냥 첫 페이지)
+  ![서비스 UI 첫 페이지](https://github.com/pradahk/OSS_final/blob/main/activate_real%20project.png)
 
 2. On the side bar, you can upload diagnosis by PDF. Then, text in the diagnosis will be extracted.
 
-  (진단서 업로드 완료 캡쳐)
-
 3. Next, you can now have real-chat. You will meet two questions per day when your diagnosis date is under 30 days since current date.
 
-   (기억 회상 단계 질문에 답변 입력한 화면 캡쳐)
-
 4. When your diagnosis date is 30 days upper, you will meet memory-check phase. There, you can check your past memory with image and answer new questions.
-
-   (기억 점검 단계에서 기억 점검 화면 캡쳐)
 
 5. We've made 300 and more questions. If you done all questions, program will be end. Congratulations!
 
