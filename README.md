@@ -81,10 +81,12 @@ Key Files:
   
 [streamlitUI_withModel]
 Purpose: Real service web application
+
 Target: Memory recall support service for dementia patients
 
 Key Features:
 FeatureDescriptionTech StackMedical Report AnalysisPDF medical report upload and automatic information extractionOCR, Regular expressionsMemory Recall QuestionsCustomized question generation based on diagnosis dateDate calculation, DatabaseMemory CheckSimilarity comparison analysis with past answersKoBERT embedding, Cosine similarityImage GenerationKeyword-based image generation assistanceDALL-E APIActivity StatisticsDaily/cumulative usage and success rate monitoringStreamlit charts
+
 ----------------------------------------
 
 Python and Module Versions for Virtual Environments
