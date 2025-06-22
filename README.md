@@ -9,11 +9,11 @@ Implementation Method: Since personal information must be used, users must authe
 
 ---
 
-Branch Structure
+## Branch Structure
 
 - Data Processing Branches
 
-[KLUE_Labeling]
+`KLUE_Labeling`
 
 Purpose: BIO labeling data generation for KLUE-BERT model training
 
@@ -22,7 +22,7 @@ Function: Assign B-KEY/I-KEY/O labels to tokenized morpheme .json files
 Key Files:
  KLUE_tokenized_answers#_labeled.json - Completed labeling data
 
-[SelfLabelling]
+`SelfLabelling`
 
 Purpose: Manual labeling dataset
 
@@ -32,7 +32,7 @@ Key Files:
  example#_custom_token.csv - Labeled answer files
 
 
-[gptapiTokenizing]
+`gptapiTokenizing`
 
 Purpose: Automatic tokenization based on GPT API
 
@@ -45,7 +45,7 @@ Key Files:
 
 - Model Training Branches
   
-[KLUE_train]
+`KLUE_train`
 
 Purpose: KLUE-BERT model training and experimentation
 
@@ -55,7 +55,7 @@ Key Files:
  improved_klue_training_keywordLimit.py - Final model training file used
 
 
-[model]
+`model`
 
 Purpose: Fine-tuning specialized for KLUE-BERT keyword extraction
 
@@ -67,7 +67,7 @@ Key Files:
  klue_model_training.py - Model fine-tuning draft
  klue_bert_reprocessing - Convert KoBERT data to KLUE-BERT
 
-[KobertTokenizing]
+`KobertTokenizing`
 
 Purpose: Tokenization files for KoBERT model training
 
@@ -77,19 +77,49 @@ Key Files:
  tokenized_answers#.json - Tokenized answer files
 
 
-- Application Branch
-  
-[streamlitUI_withModel]
-Purpose: Real service web application
+- Application Branches
 
-Target: Memory recall support service for dementia patients
+`streamlitUI_withModel`
+Purpose: Final version code of the project
+Features:
+  - Automated Medical Report Analysis: 
+    - PDF medical report upload and automatic information extraction
+    - Automatic parsing of patient basic information (name, date of birth, diagnosis date)
+    - Dementia diagnosis verification
+  - Phased System:
+    - Initial Recall Phase: 
+      - Maximum of 2 new questions per day
+      - Questions about personal memories and experiences
+      - Secure storage of responses in database
+    - Memory Check Phase: 
+      - 1 new question + 1 memory check per day
+      - Comparative analysis between past answers and current memory
+      - Similarity measurement based on KoBERT model
+  - AI Image Generation: 
+    - OpenAI DALL-E powered memory-assist image generation for forgotten memories
+    - Automatic keyword extraction from responses using model
+    - Visual cue support for memory recovery
+  - Progress Tracking: 
+    - Daily/cumulative activity status monitoring
+    - Memory check success rate statistics
+    - Reusable question management system
 
-Key Features:
-FeatureDescriptionTech StackMedical Report AnalysisPDF medical report upload and automatic information extractionOCR, Regular expressionsMemory Recall QuestionsCustomized question generation based on diagnosis dateDate calculation, DatabaseMemory CheckSimilarity comparison analysis with past answersKoBERT embedding, Cosine similarityImage GenerationKeyword-based image generation assistanceDALL-E APIActivity StatisticsDaily/cumulative usage and success rate monitoringStreamlit charts
+`streamlitUI`
+Purpose: Basic UI implementation version
+Features:
+ Automated medical report analysis
+ Phased system
+ AI image generation
+ Progress tracking
+
+`streamlitUI_수정`
+Purpose: Code modifications uploaded during model integration process
+Features: 
+ Error fixes and optimization work that occurred during model integration
 
 ----------------------------------------
 
-Python and Module Versions for Virtual Environments
+<Python and Module Versions for Virtual Environments>
 
 python              3.10.16
 
@@ -116,7 +146,7 @@ sentencepiece       0.2.0  > 0.1.96
 ---
 ---
 
-Modules for model learning
+<Modules for model learning>
 
 -CPU version
 
@@ -133,7 +163,7 @@ torchaudio==2.0.2+cu118
 
 ---
 
-Common version
+<Common version>
 
 transformers==4.30.2
 
