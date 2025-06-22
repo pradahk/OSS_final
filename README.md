@@ -1,16 +1,93 @@
 # OSS_final
 smwu 24 OSS final team project
 
-주제 : 치매 환자를 위한 증상 진행 지연 질문봇
+Topic: Question Bot for Delaying Symptom Progression in Dementia Patients
 
-목표: 사용자의 과거 기억에 대한 대화를 기록하고, 저장된 내용 기반으로 힌트를 제공하며 기억 회상을 유도하는 챗봇의 핵심 대화 로직 구현 및 시연
+Objective: Implement and demonstrate the core conversational logic of a chatbot that records conversations about users' past memories, provides hints based on stored content, and induces memory recall.
 
-구현 방법 : 개인 정보를 사용해야하므로 사용자는 치매 진단서를 인증해야하고 인증 후, 사용자는 가족 구성원, 이름, 나이, 휴대폰번호 등의 기본 정보를 입력한다. 사용자에게 일부 기간 동안은 주기적으로 질문하면서 사용자가 기억하고 있는 추억 데이터를 최대한 쌓아서 저장하고 있는다. 특정 기간 이후부터는 추억 데이터를 쌓기 위한 새로운 질문도 하면서 중간중간에 이전에 대화했던 내용을 재질문하며 기억해낼 수 있도록 한다. 사용자가 기억을 못하면 라벨링한 키워드를 뽑아 이미지 생성을 하여 시각적 힌트를 제공한다.
+Implementation Method: Since personal information must be used, users must authenticate with a dementia diagnosis certificate. After authentication, users input basic information such as family members, names, ages, phone numbers, etc. The system periodically asks users questions for a certain period to accumulate and store as much memory data as possible about what users remember. After a specific period, the system continues asking new questions to build memory data while intermittently re-questioning previously discussed content to help users recall memories. When users cannot remember, the system extracts labeled keywords and generates images to provide visual hints.
+
+---
+
+Branch Structure
+
+- Data Processing Branches
+
+[KLUE_Labeling]
+
+Purpose: BIO labeling data generation for KLUE-BERT model training
+
+Function: Assign B-KEY/I-KEY/O labels to tokenized morpheme .json files
+
+Key Files:
+ KLUE_tokenized_answers#_labeled.json - Completed labeling data
+
+[SelfLabelling]
+
+Purpose: Manual labeling dataset
+
+Function: Upload original answers and labeled answers
+
+Key Files:
+ example#_custom_token.csv - Labeled answer files
 
 
+[gptapiTokenizing]
+
+Purpose: Automatic tokenization based on GPT API
+
+Function: Morphological analysis using GPT-3.5-turbo
+
+Key Files:
+ api_tokenizer_for github.py - GPT API calls
+ example#_custom_token.csv - Morphologically tokenized example answer data
+
+
+- Model Training Branches
+  
+[KLUE_train]
+
+Purpose: KLUE-BERT model training and experimentation
+
+Function: Model keyword extraction fine-tuning
+
+Key Files:
+ improved_klue_training_keywordLimit.py - Final model training file used
+
+
+[model]
+
+Purpose: Fine-tuning specialized for KLUE-BERT keyword extraction
+
+Function:
+ Tokenization process explanation for example answer data
+ Validation process through test training
+ 
+Key Files:
+ klue_model_training.py - Model fine-tuning draft
+ klue_bert_reprocessing - Convert KoBERT data to KLUE-BERT
+
+[KobertTokenizing]
+
+Purpose: Tokenization files for KoBERT model training
+
+Function: KoBERT-specific tokenization and training
+
+Key Files:
+ tokenized_answers#.json - Tokenized answer files
+
+
+- Application Branch
+  
+[streamlitUI_withModel]
+Purpose: Real service web application
+Target: Memory recall support service for dementia patients
+
+Key Features:
+FeatureDescriptionTech StackMedical Report AnalysisPDF medical report upload and automatic information extractionOCR, Regular expressionsMemory Recall QuestionsCustomized question generation based on diagnosis dateDate calculation, DatabaseMemory CheckSimilarity comparison analysis with past answersKoBERT embedding, Cosine similarityImage GenerationKeyword-based image generation assistanceDALL-E APIActivity StatisticsDaily/cumulative usage and success rate monitoringStreamlit charts
 ----------------------------------------
 
-가상환경 파이썬 및 모듈 버전
+Python and Module Versions for Virtual Environments
 
 python              3.10.16
 
@@ -34,20 +111,18 @@ transformers        4.52.3  > 4.18.0
 
 sentencepiece       0.2.0  > 0.1.96
 
-05.24 / 23:02 / 강다온 / [README] / 모듈 버전 변경사항 저장
-
 ---
 ---
 
-model 학습을 위한 모듈
+Modules for model learning
 
--CPU 버젼
+-CPU version
 
 torch==2.0.1+cpu
 
 torchvision==0.15.2+cpu
 
--GPU 버전 PyTorch (CUDA 11.8)
+-GPU version PyTorch (CUDA 11.8)
 torch==2.0.1+cu118
 
 torchvision==0.15.2+cu118
@@ -56,7 +131,7 @@ torchaudio==2.0.2+cu118
 
 ---
 
-cpu, gpu 상관 없이 공통
+Common version
 
 transformers==4.30.2
 
