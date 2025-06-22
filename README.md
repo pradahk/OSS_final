@@ -9,6 +9,59 @@ Implementation Method: Since personal information must be used, users must authe
 
 ---
 
+## How to set up and install
+
+1. To install this project, clone the OSS_final repository
+
+2. Install `requirements.txt`for module install
+
+   `pip install -r requirements.txt`
+
+3. Run `improved_klue_training_keywordLimit.py` with anaconda virtual environement. So that make the model for keyword 
+
+   ```bash
+   conda activate your_environment
+   cd your_directory
+   python extracting.improved_klue_training_keywordLimit.py
+
+5. Run `main.py` in `OSS_final\main\UI` for streamlit UI.
+
+   `streamlit run main.py`
+   
+---
+
+## Examples of usage and execution results
+
+1. When you open streamlit UI, you can meet first page of UI
+
+  (그냥 첫 페이지)
+
+2. On the side bar, you can upload diagnosis by PDF. Then, text in the diagnosis will be extracted.
+
+  (진단서 업로드 완료 캡쳐)
+
+3. Next, you can now have real-chat. You will meet two questions per day when your diagnosis date is under 30 days since current date.
+
+   (기억 회상 단계 질문에 답변 입력한 화면 캡쳐)
+
+4. When your diagnosis date is 30 days upper, you will meet memory-check phase. There, you can check your past memory with image and answer new questions.
+
+   (기억 점검 단계에서 기억 점검 화면 캡쳐)
+
+5. We've made 300 and more questions. If you done all questions, program will be end. Congratulations!
+
+---
+
+## License of this project
+
+Please check `LICENSE` file.
+
+---
+
+## How to contribute to this project
+
+You are welcome to open issues or submit PRs to improve this app, however, please note that we may not review all suggestions.
+
 ## Branch Structure
 
 - Data Processing Branches
@@ -116,68 +169,3 @@ Features:
 Purpose: Code modifications uploaded during model integration process
 Features: 
  Error fixes and optimization work that occurred during model integration
-
-----------------------------------------
-
-<Modules for model learning>
-
--CPU version
-
-torch==2.0.1+cpu
-
-torchvision==0.15.2+cpu
-
--GPU version PyTorch (CUDA 11.8)
-torch==2.0.1+cu118
-
-torchvision==0.15.2+cu118
-
-torchaudio==2.0.2+cu118
-
----
-
-<Common version>
-
-transformers==4.30.2
-
-scikit-learn==1.6.1
-
-huggingface-hub==0.33.0
-
-pandas==1.5.3
-
-numpy==1.24.3
-
-scipy==1.13.1
-
-matplotlib==3.9.2
-
-seaborn==0.13.2
-
-streamlit
-
-requests==2.28.1
-
-tokenizers==0.13.3
-
-safetensors==0.5.3
-
-tqdm==4.67.1
-
-pyyaml==6.0.2
-
-regex==2024.11.6
-
-filelock==3.13.1
-
-fsspec==2025.5.1
-
-sympy==1.13.3
-
-mpmath==1.3.0
-
-networkx==3.2.1
-
-jinja2==3.1.4
-
-markupsafe==2.1.5
